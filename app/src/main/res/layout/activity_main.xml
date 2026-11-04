@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFF5F7">
+
+    <!-- 顶部小工具栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#d97a8a"
+        android:paddingHorizontal="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🦊 小狐狸伊恩"
+            android:textColor="#fff"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnFloat"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:text="开启悬浮窗"
+            android:textSize="12sp"
+            android:backgroundTint="#fff"
+            android:textColor="#d97a8a" />
+    </LinearLayout>
+
+    <!-- 网页界面 -->
+    <WebView
+        android:id="@+id/main_webview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>

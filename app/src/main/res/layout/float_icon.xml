@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="100dp"
+    android:layout_height="130dp">
+
+    <!-- 头顶气泡 -->
+    <TextView
+        android:id="@+id/float_bubble"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:background="#FFFFFF"
+        android:padding="6dp"
+        android:textSize="12sp"
+        android:textColor="#8A3A4A"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:maxWidth="140dp"
+        android:elevation="4dp" />
+
+    <!-- 小狐狸形象 -->
+    <ImageView
+        android:id="@+id/float_pet"
+        android:layout_width="90dp"
+        android:layout_height="104dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:scaleType="fitCenter"
+        android:contentDescription="小狐狸伊恩" />
+
+</FrameLayout>
