@@ -717,6 +717,7 @@ function renderAlarms() {
 var alarmActive = false, alarmSoundTimer = null;
 function startAlarmReminder(t) {
   alarmActive = true;
+  if (window.AndroidBridge) AndroidBridge.onAlarmStart();
   petImg.classList.add("alarm");
   sfxDing();
   if (alarmSoundTimer) clearInterval(alarmSoundTimer);
@@ -726,6 +727,7 @@ function startAlarmReminder(t) {
 }
 function stopAlarmReminder() {
   alarmActive = false;
+  if (window.AndroidBridge) AndroidBridge.onAlarmStop();
   petImg.classList.remove("alarm");
   if (alarmSoundTimer) { clearInterval(alarmSoundTimer); alarmSoundTimer=null; }
   showBubble("闹钟关掉啦~安心咯");
@@ -876,5 +878,19 @@ setInterval(function(){
 // 初始化
 updateUI();
 </script>
-</body>
+<script>
+// 安卓桥接：换装同步到悬浮窗
+var lastSkin = null;
+setInterval(function() {
+    if (window.AndroidBridge) {
+        var skin = localStorage.getItem('dp_skin') || '0';
+        if (skin !== lastSkin) {
+            lastSkin = skin;
+            // skinIdx: 0=粉发, 1=紫发 → 转成 1/2
+            var skinNum = parseInt(skin) + 1;
+            AndroidBridge.onSkinChange(String(skinNum));
+        }
+    }
+}, 1000);
+</script></body>
 </html>
