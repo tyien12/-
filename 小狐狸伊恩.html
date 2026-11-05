@@ -183,13 +183,6 @@ body.pet-mode #hover-bar button {
     <button style="background:#fff;color:#b05060" onclick="openAlarm()">⏰闹钟</button>
   </div>
 </div>
-<div id="pet-context">
-  <div style="font-size:12px;color:#b97;padding:4px 10px 6px">喂伊恩吃东西~</div>
-  <button onclick="feed('回锅肉');closeCtx()">🍖 回锅肉</button>
-  <button onclick="feed('水煮肉片');closeCtx()">🥩 水煮肉片</button>
-  <button onclick="feed('生椰拿铁');closeCtx()">🧋 生椰拿铁</button>
-  <button onclick="closeCtx()">✖ 关闭</button>
-</div>
 <div class="hint">小狐狸伊恩· 触碰他会闭眼哦</div>
 <div id="chat-box"></div>
 <div id="action-bar">
@@ -197,11 +190,6 @@ body.pet-mode #hover-bar button {
   <button class="action-btn gold" onclick="openShop()">🛒 商店</button>
   <button class="action-btn gold" onclick="openGame()">🎮 玩游戏</button>
   <button class="action-btn" onclick="openAlarm()">⏰ 闹钟</button>
-</div>
-<div id="feed-bar">
-  <button class="feed-btn" id="fb0" onclick="feed('回锅肉')">🍖 回锅肉 ×2</button>
-  <button class="feed-btn" id="fb1" onclick="feed('水煮肉片')">🥩 水煮肉片 ×2</button>
-  <button class="feed-btn" id="fb2" onclick="feed('生椰拿铁')">🧋 生椰拿铁 ×2</button>
 </div>
 <div id="input-bar">
   <input id="input" placeholder="跟我说句话..." autocomplete="off">
@@ -372,7 +360,6 @@ function loadState() {
     hunger = localStorage.getItem("dp_h") != null ? +localStorage.getItem("dp_h") : 100;
     mood   = localStorage.getItem("dp_m") != null ? +localStorage.getItem("dp_m") : 100;
     wallet = localStorage.getItem("dp_w") != null ? +localStorage.getItem("dp_w") : 100;
-    if (localStorage.getItem("dp_s")) stock = JSON.parse(localStorage.getItem("dp_s"));
     if (localStorage.getItem("dp_skin")) skinIdx = +localStorage.getItem("dp_skin");
     if (localStorage.getItem("dp_hat")) hatIdx = +localStorage.getItem("dp_hat");
     if (localStorage.getItem("dp_hats")) ownedHats = JSON.parse(localStorage.getItem("dp_hats"));
@@ -387,14 +374,12 @@ function saveState() {
     localStorage.setItem("dp_h", hunger);
     localStorage.setItem("dp_m", mood);
     localStorage.setItem("dp_w", wallet);
-    localStorage.setItem("dp_s", JSON.stringify(stock));
     localStorage.setItem("dp_skin", skinIdx);
     localStorage.setItem("dp_hat", hatIdx);
     localStorage.setItem("dp_hats", JSON.stringify(ownedHats));
   } catch(e) {}
 }
 var hunger = 100, mood = 100, wallet = 100;
-var stock = {"回锅肉":2,"水煮肉片":2,"生椰拿铁":2};
 var FOOD = {
   "回锅肉": {icon:"🍖", price:15, h:26, m:13, line:"回锅肉！香喷喷的，再来一碗！"},
   "水煮肉片": {icon:"🥩", price:12, h:24, m:12, line:"水煮肉片！麻辣过瘾，好吃到舔盘子~"},
@@ -414,12 +399,6 @@ function updateUI() {
   document.getElementById("mood-fill").style.width = mood + "%";
   document.getElementById("mood-num").textContent = Math.round(mood);
   document.getElementById("coin-num").textContent = wallet;
-  var names = ["回锅肉","水煮肉片","生椰拿铁"];
-  names.forEach(function(n,i){
-    var b = document.getElementById("fb"+i);
-    b.innerHTML = FOOD[n].icon+" "+n+" ×"+(stock[n]||0);
-    b.className = "feed-btn" + ((stock[n]||0)<=0 ? " off" : "");
-  });
   saveState();
 }
 
@@ -430,18 +409,6 @@ function statusHint() {
   else if (mood >= 25 && lastStatusHint === "sad") lastStatusHint="";
 }
 
-// ---- 喂食（消耗库存）----
-function feed(name) {
-  if ((stock[name]||0) <= 0) { showBubble("这个吃完啦，去商店买点吧~"); sfxTick(); openShop(); return; }
-  if (hunger >= 99) { showBubble("我吃饱啦~吃不下了！"); sfxDing(); return; }
-  stock[name]--;
-  hunger = Math.min(100, hunger + FOOD[name].h);
-  updateUI();
-  petImg.src = imgClosed; petImg.classList.add("touch");
-  sfxBoing();
-  showBubble(FOOD[name].line);
-  setTimeout(function(){ petImg.src=imgOpen; petImg.classList.remove("touch"); },1200);
-}
 
 // ---- 商店 ----
 function openShop() { document.getElementById("shop-overlay").style.display="flex"; renderHatShop(); sfxTick(); }
@@ -449,11 +416,15 @@ function closeShop() { document.getElementById("shop-overlay").style.display="no
 function buy(name) {
   var p = FOOD[name].price;
   if (wallet < p) { showBubble("金币不够啦，去玩游戏赚点吧~"); sfxTick(); return; }
+  if (hunger >= 99) { showBubble("我吃饱啦~吃不下了！"); sfxDing(); return; }
   wallet -= p;
-  stock[name] = (stock[name]||0) + 1;
+  hunger = Math.min(100, hunger + FOOD[name].h);
   updateUI();
-  sfxDing();
-  showBubble("买了一份"+name+"！钱包还剩"+wallet+"金币~");
+  closeShop();
+  sfxBoing();
+  petImg.src = imgClosed; petImg.classList.add("touch");
+  showBubble(FOOD[name].line);
+  setTimeout(function(){ petImg.src=imgOpen; petImg.classList.remove("touch"); },1200);
 }
 function buyToy(name) {
   var p = TOYS[name].price;
@@ -461,8 +432,12 @@ function buyToy(name) {
   if (mood >= 99) { showBubble("心情已经满格啦~"); sfxDing(); return; }
   wallet -= p;
   mood = Math.min(100, mood + TOYS[name].m);
-  updateUI(); sfxDing();
+  updateUI();
+  closeShop();
+  sfxDing();
+  petImg.src = imgClosed; petImg.classList.add("touch");
   showBubble(TOYS[name].line);
+  setTimeout(function(){ petImg.src=imgOpen; petImg.classList.remove("touch"); },1200);
 }
 
 // ---- 头饰商店 ----
@@ -785,7 +760,7 @@ function sgStep() {
   var size = sgBoxSize();
   var lineY = 44;
   sgBalls.forEach(function(b){
-    b.vy += 0.25;
+    b.vy += 0.18;
     b.y += b.vy;
     if (b.y + b.r >= size.H) { b.y = size.H - b.r; b.vy = 0; }
     if (b.x - b.r < 0) b.x = b.r;
@@ -800,7 +775,7 @@ function sgStep() {
           sgMerge(a,c);
           break;
         } else {
-          var overlap=(min-dist)/2;
+          var overlap=(min-dist)*0.3;
           var nx=dx/dist, ny=dy/dist;
           a.x-=nx*overlap; a.y-=ny*overlap;
           c.x+=nx*overlap; c.y+=ny*overlap;
@@ -981,18 +956,9 @@ petImg.addEventListener("click", touchPet);
 if (location.search.indexOf("pet=1")>=0) {
   document.body.classList.add("pet-mode");
 }
-// 右键小狐狸弹喂食菜单
+// 长按/右键不弹系统菜单
 petImg.addEventListener("contextmenu", function(e) {
   e.preventDefault();
-  var ctx = document.getElementById("pet-context");
-  ctx.style.display = "block";
-  ctx.style.left = Math.min(e.clientX, window.innerWidth-160) + "px";
-  ctx.style.top = Math.min(e.clientY, window.innerHeight-200) + "px";
-});
-function closeCtx() { document.getElementById("pet-context").style.display="none"; }
-document.addEventListener("click", function(e) {
-  var ctx = document.getElementById("pet-context");
-  if (ctx.style.display==="block" && !ctx.contains(e.target)) closeCtx();
 });
 
 function showBubble(text) {
