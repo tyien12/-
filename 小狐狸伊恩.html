@@ -85,8 +85,8 @@ body.pet-mode #hover-bar button {
   padding:7px 14px; font-size:14px; font-weight:bold; cursor:pointer; -webkit-tap-highlight-color:transparent;
 }
 .action-btn:active { background:#ffe0e6; transform:scale(.95); }
-.game-tabs { display:flex; gap:6px; margin-bottom:10px; }
-.game-tabs .action-btn { flex:1 1 0; padding:8px 2px; font-size:12.5px; white-space:nowrap; text-align:center; line-height:1.3; }
+.game-tabs { display:flex; gap:8px; margin-bottom:10px; }
+.game-tabs .action-btn { flex:1 1 0; min-width:0; padding:9px 4px; font-size:12px; white-space:nowrap; text-align:center; line-height:1.25; border-radius:14px; }
 .action-btn.gold { border-color:#e8c760; color:#b0891f; background:#fffbe8; }
 /* 喂食区 */
 #feed-bar { display:flex; justify-content:center; gap:8px; padding:6px 10px; background:#fff; border-top:1px solid #f0d0d6; }
@@ -150,8 +150,8 @@ body.pet-mode #hover-bar button {
   position:relative; width:100%; height:340px; border:3px dashed #f0b6c2;
   border-radius:16px; background:rgba(255,255,255,.5); overflow:hidden; cursor:pointer;
 }
-#sg-line { position:absolute; left:0; right:0; top:44px; border-top:2px dashed #ef7a95; z-index:5; }
-#sg-line-label { position:absolute; right:6px; top:28px; font-size:10px; color:#ef7a95; z-index:5; }
+#sg-line { position:absolute; left:0; right:0; top:64px; border-top:2px dashed #ef7a95; z-index:5; }
+#sg-line-label { position:absolute; right:6px; top:48px; font-size:10px; color:#ef7a95; z-index:5; }
 .sg-ball {
   position:absolute; border-radius:50%; overflow:hidden; z-index:2;
   box-shadow:0 2px 6px rgba(0,0,0,.18); -webkit-tap-highlight-color:transparent;
@@ -196,15 +196,24 @@ body.pet-mode #hover-bar button {
   <button id="send-btn" onclick="send()">发送</button>
 </div>
 
-<!-- 闹钟弹窗 -->
+<!-- 倒计时弹窗 -->
 <div class="overlay" id="alarm-overlay">
   <div class="panel">
-    <h3>⏰ 闹钟提醒</h3>
-    <div style="font-size:12px;color:#a05565;margin-bottom:6px">设个时间，到点小狐狸会提醒你哦~</div>
+    <h3>⏰ 倒计时提醒</h3>
+    <div style="font-size:12px;color:#a05565;margin-bottom:6px">设个时长，到点小狐狸会提醒你哦~</div>
     <div id="alarm-list" style="margin:8px 0;max-height:120px;overflow-y:auto"></div>
-    <div style="display:flex;gap:8px;align-items:center;margin:6px 0">
-      <input type="time" id="alarm-time" value="08:00" style="flex:1;padding:8px;font-size:15px;border:1px solid #ddd;border-radius:8px">
-      <button class="buy-btn" onclick="addAlarm()">设置</button>
+    <div style="display:flex;gap:6px;align-items:center;margin:6px 0">
+      <input type="number" id="alarm-min" min="0" value="5" style="width:64px;padding:8px;font-size:15px;border:1px solid #ddd;border-radius:8px">
+      <span style="font-size:13px;color:#a05565">分</span>
+      <input type="number" id="alarm-sec" min="0" value="0" style="width:64px;padding:8px;font-size:15px;border:1px solid #ddd;border-radius:8px">
+      <span style="font-size:13px;color:#a05565">秒</span>
+      <button class="buy-btn" onclick="addTimer()">开始倒计时</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px">
+      <button onclick="setPreset(1)" style="padding:6px 10px;font-size:13px;border:1px solid #f0c4cc;background:#fff;border-radius:8px;color:#b05060">1分钟</button>
+      <button onclick="setPreset(5)" style="padding:6px 10px;font-size:13px;border:1px solid #f0c4cc;background:#fff;border-radius:8px;color:#b05060">5分钟</button>
+      <button onclick="setPreset(10)" style="padding:6px 10px;font-size:13px;border:1px solid #f0c4cc;background:#fff;border-radius:8px;color:#b05060">10分钟</button>
+      <button onclick="setPreset(30)" style="padding:6px 10px;font-size:13px;border:1px solid #f0c4cc;background:#fff;border-radius:8px;color:#b05060">30分钟</button>
     </div>
     <button class="buy-btn" onclick="closeAlarm()">关闭</button>
   </div>
@@ -705,8 +714,15 @@ function sgClear() {
   sgBalls = [];
 }
 function sgRollNext() {
-  var rr = Math.random();
-  sgNext = rr < 0.5 ? 0 : (rr < 0.85 ? 1 : 2);
+  var cap = sgScore < 5 ? 2 : (sgScore < 15 ? 4 : 6);
+  var total = 0, l;
+  for (l=0; l<=cap; l++) total += (cap-l+1);
+  var pick = Math.random()*total;
+  sgNext = cap;
+  for (l=0; l<=cap; l++) {
+    pick -= (cap-l+1);
+    if (pick <= 0) { sgNext = l; break; }
+  }
   sgRenderPreview();
 }
 function sgRenderPreview() {
@@ -736,7 +752,7 @@ function sgDrop(px) {
   var level = sgNext;
   var r = SG_R[level];
   var x = Math.max(r, Math.min(size.W - r, px));
-  var b = { x:x, y:r, r:r, level:level, vy:0, el:null };
+  var b = { x:x, y:r, r:r, level:level, vx:0, vy:0, still:0, overT:0, age:0, el:null };
   b.el = sgMakeEl(b);
   sgBox.appendChild(b.el);
   sgBalls.push(b);
@@ -758,34 +774,52 @@ function sgRender(b) {
 }
 function sgStep() {
   var size = sgBoxSize();
-  var lineY = 44;
+  var lineY = 64;
   sgBalls.forEach(function(b){
     b.vy += 0.18;
+    b.x += (b.vx||0);
     b.y += b.vy;
     if (b.y + b.r >= size.H) { b.y = size.H - b.r; b.vy = 0; }
-    if (b.x - b.r < 0) b.x = b.r;
-    if (b.x + b.r > size.W) b.x = size.W - b.r;
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = -b.vx*0.3; }
+    if (b.x + b.r > size.W) { b.x = size.W - b.r; b.vx = -b.vx*0.3; }
+    if (b.vy === 0) { b.still = (b.still||0) + 1; b.vx = (b.vx||0)*0.82; } else b.still = 0;
+    b.age = (b.age||0) + 1;
   });
-  for (var i=0;i<sgBalls.length;i++){
-    for (var j=i+1;j<sgBalls.length;j++){
-      var a=sgBalls[i], c=sgBalls[j];
-      var dx=c.x-a.x, dy=c.y-a.y, dist=Math.sqrt(dx*dx+dy*dy)||0.1, min=a.r+c.r;
-      if (dist < min) {
-        if (a.level===c.level) {
-          sgMerge(a,c);
-          break;
-        } else {
-          var overlap=(min-dist)*0.3;
+  for (var pass=0; pass<3; pass++){
+    for (var i=0;i<sgBalls.length;i++){
+      for (var j=i+1;j<sgBalls.length;j++){
+        var a=sgBalls[i], c=sgBalls[j];
+        var dx=c.x-a.x, dy=c.y-a.y, dist=Math.sqrt(dx*dx+dy*dy)||0.1, min=a.r+c.r;
+        if (dist < min) {
+          if (pass===0 && a.level===c.level) {
+            sgMerge(a,c);
+            break;
+          }
+          var overlap=min-dist;
           var nx=dx/dist, ny=dy/dist;
-          a.x-=nx*overlap; a.y-=ny*overlap;
-          c.x+=nx*overlap; c.y+=ny*overlap;
+          a.x-=nx*overlap*0.5; c.x+=nx*overlap*0.5;
+          a.y-=ny*overlap*0.5; c.y+=ny*overlap*0.5;
+          var rvx=(c.vx||0)-(a.vx||0), rvy=c.vy-a.vy;
+          var vn=rvx*nx+rvy*ny;
+          if (vn < 0) {
+            var imp=-(1+0.1)*vn*0.5;
+            a.vx-=imp*nx; c.vx+=imp*nx;
+            a.vy-=imp*ny; c.vy+=imp*ny;
+            var vmax=0.6;
+            [[a],[c]].forEach(function(z){
+              z[0].vx=Math.max(-vmax,Math.min(vmax,z[0].vx||0));
+            });
+          }
         }
       }
     }
   }
   var over=false;
   sgBalls.forEach(function(b){
-    if (b.vy===0 && b.y - b.r < lineY) over=true;
+    if ((b.age||0) >= 10 && b.y - b.r < lineY) {
+      b.overT = (b.overT||0) + 1;
+      if (b.overT >= 25) over=true;
+    } else { b.overT = 0; }
   });
   if (over && !sgOver) sgGameOver();
   sgBalls.forEach(sgRender);
@@ -794,14 +828,15 @@ function sgStep() {
 function sgMerge(a,c) {
   var nl = Math.min(10, a.level+1);
   var nx=(a.x+c.x)/2, ny=(a.y+c.y)/2;
-  var nb = { x:nx, y:ny, r:SG_R[nl], level:nl, vy:0, el:null };
+  var nb = { x:nx, y:ny, r:SG_R[nl], level:nl, vx:0, vy:0, still:0, overT:0, age:0, el:null };
   nb.el = sgMakeEl(nb);
   a.el.remove(); c.el.remove();
   sgBalls = sgBalls.filter(function(b){ return b!==a && b!==c; });
   sgBalls.push(nb);
   sgBox.appendChild(nb.el);
   sgScore++;
-  wallet += 1;
+  var gain = nl >= 7 ? 2 : (nl >= 4 ? 1 : 0);
+  wallet += gain;
   updateUI();
   sfxDing();
   if (nl===10) document.getElementById("sg-msg").textContent="🎉 合成最大形象啦！继续挑战~";
@@ -886,28 +921,32 @@ function greetingForNow() {
   setTimeout(function(){ addMsg("ai", msg); }, 700);
 })();
 
-// 闹钟
-var alarms = [];
-function openAlarm() { document.getElementById("alarm-overlay").style.display="flex"; sfxTick(); renderAlarms(); }
+// 倒计时
+var timers = [];
+function openAlarm() { document.getElementById("alarm-overlay").style.display="flex"; sfxTick(); renderTimers(); }
 function closeAlarm() { document.getElementById("alarm-overlay").style.display="none"; }
-function addAlarm() {
-  var v = document.getElementById("alarm-time").value;
-  if (!v) { showBubble("先选个时间嘛~"); return; }
-  alarms.push({t:v, fired:false});
-  sfxTick(); renderAlarms();
-  showBubble("闹钟设好啦：" + v + " ⏰");
+function setPreset(m) { document.getElementById("alarm-min").value = m; document.getElementById("alarm-sec").value = 0; }
+function addTimer() {
+  var m = parseFloat(document.getElementById("alarm-min").value)||0;
+  var s = parseFloat(document.getElementById("alarm-sec").value)||0;
+  var sec = Math.round(m * 60 + s);
+  if (sec <= 0) { showBubble("先填个时长嘛~"); return; }
+  timers.push({remain: sec, total: sec, fired:false});
+  sfxTick(); renderTimers();
+  showBubble("倒计时开始：" + fmtRemain(sec) + " ⏰");
 }
-function removeAlarm(i) { alarms.splice(i,1); renderAlarms(); sfxTick(); }
-function renderAlarms() {
+function removeTimer(i) { timers.splice(i,1); renderTimers(); sfxTick(); }
+function fmtRemain(s) { var mm=Math.floor(s/60), ss=s%60; return (mm<10?"0":"")+mm+":"+(ss<10?"0":"")+ss; }
+function renderTimers() {
   var box = document.getElementById("alarm-list");
-  if (alarms.length === 0) { box.innerHTML = "<div style='color:#aaa;font-size:12px'>还没有闹钟，设一个吧~</div>"; return; }
-  box.innerHTML = alarms.map(function(a,i){
+  if (timers.length === 0) { box.innerHTML = "<div style='color:#aaa;font-size:12px'>还没有倒计时，设一个吧~</div>"; return; }
+  box.innerHTML = timers.map(function(t,i){
     return "<div style='display:flex;justify-content:space-between;align-items:center;margin:4px 0'>"
-      + "<span>⏰ " + a.t + (a.fired ? "（已响）" : "") + "</span>"
-      + "<button class='buy-btn' onclick='removeAlarm(" + i + ")'>删除</button></div>";
+      + "<span>⏰ " + fmtRemain(t.remain) + (t.fired ? "（已响）" : "") + "</span>"
+      + "<button class='buy-btn' onclick='removeTimer(" + i + ")'>删除</button></div>";
   }).join("");
 }
-// ---- 闹钟强提醒：响后桌宠一直跳+循环音效，点它才停 ----
+// ---- 倒计时响铃强提醒：响后桌宠一直跳+循环音效，点它才停 ----
 var alarmActive = false, alarmSoundTimer = null;
 function startAlarmReminder(t) {
   alarmActive = true;
@@ -917,7 +956,7 @@ function startAlarmReminder(t) {
   if (alarmSoundTimer) clearInterval(alarmSoundTimer);
   alarmSoundTimer = setInterval(function(){ sfxDing(); }, 1500);
   showBubble("⏰ " + t + " 到啦！快点点我停止~");
-  addMsg("sys", "⏰ 闹钟提醒：" + t + " 到啦！" + greetingForNow());
+  addMsg("sys", "⏰ 倒计时提醒：" + t + " 到啦！" + greetingForNow());
 }
 function stopAlarmReminder() {
   alarmActive = false;
@@ -927,18 +966,15 @@ function stopAlarmReminder() {
   showBubble("闹钟关掉啦~安心咯");
   sfxTick();
 }
-function checkAlarms() {
-  var d = new Date();
-  var now = fmt2(d.getHours()) + ":" + fmt2(d.getMinutes());
-  alarms.forEach(function(a){
-    if (!a.fired && a.t === now) {
-      a.fired = true;
-      startAlarmReminder(a.t);
-      renderAlarms();
+setInterval(function() {
+  timers.forEach(function(t) {
+    if (!t.fired && t.remain > 0) {
+      t.remain--;
+      if (t.remain <= 0) { t.fired = true; startAlarmReminder(fmtRemain(t.total)); }
     }
   });
-}
-setInterval(checkAlarms, 5000);
+  renderTimers();
+}, 1000);
 
 // ---- 触碰 ----
 function touchPet() {
